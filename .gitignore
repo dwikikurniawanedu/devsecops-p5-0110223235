@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+.pytest_cache/
+.coverage
+.venv/
+.mypy_cache/
+*.pyc
+.idea/
+.vscode/
+
+# Reports and generated application data
+coverage.xml
+htmlcov/
+.scannerwork/
+data/
+laporan/*.pdf
+laporan/screenshots/
+
+# Local secrets
+.env
+.env.*
+!.env.example
