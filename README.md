@@ -1,119 +1,64 @@
 # Catatan Kas Harian
 
-Aplikasi terminal sederhana untuk mencatat pemasukan dan pengeluaran kas, melihat saldo, menyaring transaksi bulanan, dan mengekspor data ke CSV. Data disimpan sebagai JSON pada komputer pengguna, sehingga aplikasi tidak memerlukan database server. Proyek ini dipakai untuk tugas DevSecOps Pertemuan 5.
+Catatan Kas Harian adalah aplikasi sederhana berbasis Python untuk mencatat pemasukan dan pengeluaran. Aplikasi ini dapat menampilkan daftar transaksi, menghitung saldo, membuat laporan bulanan, dan mengekspor data ke CSV. Data transaksi disimpan secara lokal menggunakan format JSON.
 
-## Fitur utama
+Proyek ini digunakan untuk tugas DevSecOps Pertemuan 5, yaitu menerapkan pengujian otomatis dan pemeriksaan keamanan kode melalui GitHub Actions.
 
-- Tambah transaksi pemasukan dan pengeluaran dengan tanggal serta keterangan.
-- Validasi nominal, jenis transaksi, tanggal dan keterangan.
-- Tampilkan transaksi, hapus transaksi menurut ID dan buat ringkasan kas.
-- Filter ringkasan berdasarkan bulan dan ekspor data ke CSV.
+## Teknologi yang Digunakan
 
-## Teknologi
+- Python 3.12
+- Pytest dan pytest-cov untuk pengujian
+- Bandit, CodeQL, dan SonarQube untuk analisis keamanan kode
+- GitHub Actions untuk menjalankan pipeline CI/CD
 
-- **Bahasa:** Python 3.12 (tanpa framework web)
-- **Pengujian:** pytest, pytest-cov
-- **SAST:** Bandit, CodeQL, SonarQube Cloud
-- **Otomasi CI:** GitHub Actions dengan runner `ubuntu-latest`
-- **Penyimpanan:** file JSON lokal
-
-## Struktur kode
+## Struktur Proyek
 
 ```text
-app/
-├── __init__.py     # penanda package
-├── main.py         # antarmuka command-line
-├── models.py       # model data transaksi
-├── transaksi.py    # logika tambah, daftar, dan hapus
-├── validasi.py     # pemeriksaan input
-├── penyimpanan.py  # baca/tulis JSON
-└── laporan.py      # saldo, filter bulanan dan CSV
-tests/              # pengujian otomatis
-.github/workflows/devsecops.yml
+app/                  # Source code aplikasi
+tests/                # Unit test
+.github/workflows/     # Workflow GitHub Actions
+requirements-dev.txt  # Dependencies
+sonar-project.properties
+README.md
 ```
 
-Enam file `.py` di `app/` berisi kode fungsional; `__init__.py` tidak dihitung sebagai source code fungsional.
+Folder `app` berisi enam modul utama, yaitu `main.py`, `models.py`, `transaksi.py`, `validasi.py`, `penyimpanan.py`, dan `laporan.py`.
 
-## Menjalankan aplikasi
+## Cara Menjalankan
 
-Python minimal versi 3.10. Dari direktori proyek:
-
-**Ubuntu / WSL**
+Pastikan Python sudah terinstal. Buka terminal pada folder proyek, kemudian jalankan:
 
 ```bash
-sudo apt update
-sudo apt install python3 python3-venv python3-pip -y
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
 ```
 
-**Windows PowerShell**
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
-```
-
-Contoh pemakaian (berjalan di kedua lingkungan):
+Contoh penggunaan aplikasi:
 
 ```bash
 python -m app.main tambah masuk 100000 "Uang saku"
 python -m app.main tambah keluar 25000 "Makan siang"
 python -m app.main daftar
 python -m app.main laporan
-python -m app.main laporan --bulan 2026-10
-python -m app.main ekspor data/laporan.csv
-python -m app.main hapus 1
 ```
 
-Transaksi lokal disimpan di `data/transaksi.json`, yang diabaikan Git. Gunakan `--file nama.json` sebelum subcommand jika memerlukan file lain.
-
-## Pengujian lokal
+Untuk menjalankan unit test dan pemeriksaan keamanan:
 
 ```bash
-python -m pytest -q --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+python -m pytest -v --cov=app
 python -m bandit -r app -ll -ii
 ```
 
-Parameter Bandit: `-ll` berarti severity minimal MEDIUM; `-ii` berarti confidence minimal MEDIUM.
+## Pipeline DevSecOps
 
-## Gambaran pipeline DevSecOps
+Pipeline dibuat menggunakan GitHub Actions melalui file `.github/workflows/devsecops.yml`. Workflow berjalan otomatis ketika terdapat push atau pull request ke branch `main`.
 
-Workflow `.github/workflows/devsecops.yml` berjalan saat **push** ke branch `main` dan **pull_request** dengan target branch `main`.
+Pipeline terdiri dari dua job:
 
-| Job | Tugas | Aturan lulus / gagal |
-|---|---|---|
-| `build` | Instal dependensi, cek sintaks Python, jalankan unit test dan menghasilkan `coverage.xml` | Test harus lulus dan coverage minimal 80% |
-| `sast-scan` (`needs: build`) | CodeQL, Bandit, SonarQube Cloud | Bandit tidak menemukan isu sesuai ambang; SonarQube Quality Gate harus PASSED |
+1. **build:** Menginstal dependencies, memeriksa kode Python, menjalankan unit test, dan menghitung coverage.
+2. **sast-scan:** Menjalankan pemeriksaan keamanan menggunakan Bandit, CodeQL, dan SonarQube setelah job build berhasil.
 
-Kedua job menggunakan `ubuntu-latest`. Hasil CodeQL diunggah melalui `github/codeql-action/analyze` dan dapat diperiksa pada **Security > Code scanning**. Coverage dari job `build` dikirim ke `sast-scan` melalui GitHub Actions artifacts agar dapat digunakan SonarQube.
+Kedua job menggunakan runner `ubuntu-latest`. Pipeline akan dinyatakan gagal apabila pengujian tidak lulus atau hasil pemeriksaan tidak memenuhi Quality Gate.
 
-Pipeline ini berfokus pada **Continuous Integration dan pemeriksaan keamanan**, belum menyertakan deployment otomatis. Jika pemeriksaan gagal, workflow akan merah. Agar kegagalan juga benar-benar **mencegah merge**, tambahkan required status checks pada aturan branch `main` di pengaturan GitHub.
-
-## Pengaturan SonarQube Cloud (perlu dilakukan oleh pemilik repository)
-
-1. Buat repository GitHub **Public**, lalu unggah proyek ke branch `main`.
-2. Login dengan akun GitHub ke https://sonarcloud.io. Impor repository dan pilih **CI-based analysis / GitHub Actions**, bukan Automatic Analysis.
-3. Catat nilai **Organization Key** dan **Project Key** yang diberikan SonarQube Cloud.
-4. Buat analysis token dengan izin proyek yang sesuai. **Jangan menulis token di kode, YAML, atau screenshot.**
-5. Buka GitHub **Settings > Secrets and variables > Actions** dan buat:
-   - **Secret**: `SONAR_TOKEN`
-   - **Variable**: `SONAR_ORGANIZATION`
-   - **Variable**: `SONAR_PROJECT_KEY`
-6. Push commit baru, periksa tab **Actions**, dan cek dashboard SonarQube Cloud untuk Quality Gate serta coverage.
-7. Buat branch baru di repository yang sama dan ajukan **Pull Request** ke `main` untuk membuktikan trigger PR. Token umumnya tidak tersedia untuk PR dari fork eksternal.
-
-**Catatan:** Workflow memang akan gagal pada tahap validasi konfigurasi SonarQube sebelum secret dan variables dibuat. Ini sengaja agar proses tidak menampilkan status berhasil padahal scanner SonarQube belum berjalan.
-
-## Dokumentasi praktikum
-
-Instruksi screenshot dan tahapan laporan ada pada `PANDUAN_SCREENSHOT_DAN_LAPORAN.md`. Bukti yang wajib berasal dari eksekusi nyata, bukan dibuat berdasarkan perkiraan atau menggunakan screenshot milik orang lain.
-
-## Referensi
-
-- Materi **Integrasi SAST dalam CI/CD Pipeline dengan GitHub Actions**, Pertemuan 5, STT Terpadu Nurul Fikri.
-- GitHub Docs: https://docs.github.com/en/actions
-- GitHub CodeQL: https://github.com/github/codeql-action
-- SonarQube Scan Action: https://github.com/SonarSource/sonarqube-scan-action
+Hasil pipeline dapat dilihat melalui tab **Actions** pada repository GitHub.
