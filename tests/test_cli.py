@@ -16,8 +16,13 @@ def test_cli_angka_invalid(tmp_path, capsys):
     assert jalankan(["--file", str(tmp_path / "data.json"), "tambah", "masuk", "0", "Tidak valid"]) == 1
     assert "Kesalahan" in capsys.readouterr().out
 
-def test_cli_ekspor(tmp_path):
+def test_cli_ekspor(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+
     file_data = str(tmp_path / "data.json")
-    file_csv = tmp_path / "ekspor.csv"
-    assert jalankan(["--file", file_data, "ekspor", str(file_csv)]) == 0
-    assert file_csv.exists()
+
+    assert jalankan([
+        "--file", file_data, "ekspor", "ekspor.csv"
+    ]) == 0
+
+    assert (tmp_path / "exports" / "ekspor.csv").exists()

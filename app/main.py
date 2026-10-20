@@ -51,7 +51,11 @@ def jalankan(argv: list[str] | None = None) -> int:
             berhasil = hapus_transaksi(penyimpanan, argumen.id)
             print("Transaksi berhasil dihapus." if berhasil else "ID transaksi tidak ditemukan.")
         elif argumen.aksi == "ekspor":
-            tujuan = ekspor_csv(daftar_transaksi(penyimpanan), argumen.tujuan)
+            tujuan = ekspor_csv(
+                daftar_transaksi(penyimpanan),
+                argumen.tujuan,
+                Path.cwd() / "exports",
+            )
             print(f"Data disimpan ke {tujuan}.")
         return 0
     except ValueError as kesalahan:

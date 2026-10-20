@@ -22,8 +22,23 @@ def test_filter_bulan_tidak_valid(sampel):
         filter_bulan(sampel, "Oktober 2026")
 
 def test_ekspor_csv(sampel, tmp_path):
-    tujuan = ekspor_csv(sampel, tmp_path / "hasil.csv")
+    tujuan = ekspor_csv(sampel, "hasil.csv", tmp_path / "exports")
     with tujuan.open(encoding="utf-8-sig", newline="") as berkas:
         hasil = list(csv.reader(berkas))
     assert hasil[0][0] == "ID"
     assert len(hasil) == 4
+
+@pytest.mark.parametrize(
+    "lokasi",
+    [
+        "../rahasia.csv",
+        "../../rahasia.csv",
+        "folder/hasil.csv",
+        r"folder\hasil.csv",
+        "/tmp/hasil.csv",
+        r"C:\temp\hasil.csv",
+    ],
+)
+def test_ekspor_menolak_path_traversal(tmp_path, lokasi):
+    with pytest.raises(ValueError):
+        ekspor_csv([], lokasi, tmp_path / "exports")

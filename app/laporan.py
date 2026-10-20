@@ -20,12 +20,45 @@ def filter_bulan(transaksi: list[Transaksi], bulan: str) -> list[Transaksi]:
         raise ValueError("Bulan harus berformat YYYY-MM.")
     return [item for item in transaksi if item.tanggal.startswith(bulan + "-")]
 
-def ekspor_csv(transaksi: list[Transaksi], lokasi: str | Path) -> Path:
-    tujuan = Path(lokasi)
-    tujuan.parent.mkdir(parents=True, exist_ok=True)
+
+def ekspor_csv(
+    transaksi: list[Transaksi],
+    lokasi: str | Path,
+    direktori_ekspor: Path,
+) -> Path:
+    """Ekspor CSV ke direktori yang ditentukan aplikasi."""
+
+    nama_file = str(lokasi)
+
+    if (
+        not nama_file
+        or "/" in nama_file
+        or "\\" in nama_file
+        or nama_file in {".", ".."}
+        or Path(nama_file).suffix.lower() != ".csv"
+    ):
+        raise ValueError(
+            "Gunakan nama file CSV saja, contoh: laporan.csv"
+        )
+
+    direktori = direktori_ekspor.resolve()
+    direktori.mkdir(parents=True, exist_ok=True)
+
+    tujuan = (direktori / nama_file).resolve()
+
+    if tujuan.parent != direktori:
+        raise ValueError("Lokasi ekspor tidak diizinkan.")
+
     with tujuan.open("w", newline="", encoding="utf-8-sig") as berkas:
         penulis = csv.writer(berkas)
-        penulis.writerow(["ID", "Tanggal", "Jenis", "Jumlah (Rp)", "Keterangan"])
+        penulis.writerow([
+            "ID", "Tanggal", "Jenis", "Jumlah (Rp)", "Keterangan"
+        ])
+
         for item in transaksi:
-            penulis.writerow([item.id, item.tanggal, item.jenis, item.jumlah, item.keterangan])
+            penulis.writerow([
+                item.id, item.tanggal, item.jenis,
+                item.jumlah, item.keterangan
+            ])
+
     return tujuan
